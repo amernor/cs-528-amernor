@@ -19,6 +19,7 @@ import datetime
 import json
 import os
 import subprocess
+import threading
 
 import google.auth.credentials
 from google.cloud import pubsub_v1, storage
@@ -28,6 +29,7 @@ SA_EMAIL = os.environ["SA_EMAIL"]
 BUCKET = os.environ.get("BUCKET", "cs528-amernor")
 SUBSCRIPTION = os.environ.get("SUBSCRIPTION", "forbidden-requests-sub")
 LOG_OBJECT = "forbidden-logs/forbidden_requests.txt"
+_append_lock = threading.Lock()  # callbacks run on a thread pool
 
 
 class GcloudImpersonatedCredentials(google.auth.credentials.Credentials):
@@ -57,9 +59,20 @@ sub_path = subscriber.subscription_path(PROJECT_ID, SUBSCRIPTION)
 
 def append_to_bucket(line):
     """GCS objects are immutable, so 'append' = read, add line, re-upload."""
-    blob = storage_client.bucket(BUCKET).blob(LOG_OBJECT)
-    existing = blob.download_as_text() if blob.exists() else ""
-    blob.upload_from_string(existing + line + "\n", content_type="text/plain")
+    with _append_lock:
+        bucket = storage_client.bucket(BUCKET)
+        # get_blob fetches current metadata, so the download below is pinned to
+        # the latest generation; the bucket is public and a plain download can
+        # return a cached (stale) copy, which would overwrite earlier lines
+        blob = bucket.get_blob(LOG_OBJECT)
+        if blob is None:
+            blob, existing, generation = bucket.blob(LOG_OBJECT), "", 0
+        else:
+            existing, generation = blob.download_as_text(), blob.generation
+        blob.cache_control = "no-store"
+        # fail (and let Pub/Sub redeliver) if the file changed since we read it
+        blob.upload_from_string(existing + line + "\n", content_type="text/plain",
+                                if_generation_match=generation)
 
 
 def callback(message):
