@@ -1,0 +1,10 @@
+<<<<<<< Updated upstream
+=======
+.DS_Store
+.venv/
+__pycache__/
+hw3/http-client
+hw3/client-run.txt
+hw4/http-client
+hw4/client-run.txt
+>>>>>>> Stashed changes
