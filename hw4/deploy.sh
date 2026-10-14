@@ -120,11 +120,12 @@ create_vm "$REPORT_VM" \
   --service-account "$REPORT_SA" --scopes cloud-platform
 
 if [[ "${CREATE_CLIENT:-0}" == 1 ]]; then
+  # Ubuntu 24.04: the provided Linux http client needs glibc >= 2.38 (Debian 12 has 2.36)
   echo "==> VM: $CLIENT_VM (http client, no service account)"
   exists gc compute instances describe "$CLIENT_VM" --zone "$ZONE" ||
     gc compute instances create "$CLIENT_VM" --zone "$ZONE" \
       --machine-type "$CLIENT_MACHINE" \
-      --image-family debian-12 --image-project debian-cloud \
+      --image-family ubuntu-2404-lts-amd64 --image-project ubuntu-os-cloud \
       --no-service-account --no-scopes \
       --metadata-from-file "startup-script=$HERE/startup/client-startup.sh"
 fi

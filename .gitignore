@@ -1,11 +1,14 @@
-<<<<<<< Updated upstream
-=======
 .DS_Store
 .venv/
 __pycache__/
+
+# provided client binaries and their output
 hw3/http-client
 hw3/client-run.txt
 hw4/http-client
+hw4/http-client-linux
 hw4/client-run.txt
->>>>>>> Stashed changes
+
+# raw stress test logs (kept local); notes for the written report
 hw4/stress-test/results/
+hw4/report/*.md
