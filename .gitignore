@@ -18,3 +18,4 @@ hw5/.venv/
 hw5/http-client*
 hw5/results/
 hw5/timings*.csv
+hw5/headers.log
