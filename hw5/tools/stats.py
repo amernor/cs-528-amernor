@@ -1,6 +1,11 @@
 """
-Part 7: statistics over all requests in Cloud SQL. Prints each question with
+Part 7: statistics over the requests in Cloud SQL. Prints each question with
 its SQL and answer, and writes report/stats.md.
+
+The provided client sends all six X-* headers on every request; internet
+scanners that hit the public port send none. The answers therefore use only
+rows that carry client headers (CLIENT_ROWS), and rows without them are
+counted separately in the sanity checks.
 
 Usage: hw5/.venv/bin/python tools/stats.py
 """
@@ -10,31 +15,41 @@ import sqlalchemy
 
 import db
 
+CLIENT_ROWS = ("country IS NOT NULL AND client_ip IS NOT NULL AND gender IS NOT NULL"
+               " AND age IS NOT NULL AND income IS NOT NULL AND time_of_day IS NOT NULL")
+
 QUESTIONS = [
     ("How many requests were processed successfully vs unsuccessfully?",
-     """SELECT IF(status_code = 200, 'successful (200)', 'unsuccessful (non-200)') AS outcome,
+     f"""SELECT IF(status_code = 200, 'successful (200)', 'unsuccessful (non-200)') AS outcome,
                COUNT(*) AS requests
-        FROM requests GROUP BY outcome ORDER BY outcome"""),
+        FROM requests WHERE {CLIENT_ROWS} GROUP BY outcome ORDER BY outcome"""),
     ("Breakdown of the unsuccessful requests by status code",
-     """SELECT status_code, COUNT(*) AS requests
-        FROM requests WHERE status_code <> 200 GROUP BY status_code ORDER BY status_code"""),
+     f"""SELECT status_code, COUNT(*) AS requests
+        FROM requests WHERE {CLIENT_ROWS} AND status_code <> 200
+        GROUP BY status_code ORDER BY status_code"""),
     ("How many requests came from banned countries?",
-     """SELECT COUNT(*) AS requests FROM requests WHERE is_banned"""),
+     f"""SELECT COUNT(*) AS requests FROM requests WHERE {CLIENT_ROWS} AND is_banned"""),
     ("How many requests were made by Male vs Female users?",
-     """SELECT gender, COUNT(*) AS requests
-        FROM requests GROUP BY gender ORDER BY requests DESC"""),
+     f"""SELECT gender, COUNT(*) AS requests
+        FROM requests WHERE {CLIENT_ROWS} GROUP BY gender ORDER BY requests DESC"""),
     ("What were the top 5 countries sending requests?",
-     """SELECT country, COUNT(*) AS requests
-        FROM requests GROUP BY country ORDER BY requests DESC, country LIMIT 5"""),
+     f"""SELECT country, COUNT(*) AS requests
+        FROM requests WHERE {CLIENT_ROWS}
+        GROUP BY country ORDER BY requests DESC, country LIMIT 5"""),
     ("What age group issued the most requests?",
-     """SELECT age, COUNT(*) AS requests
-        FROM requests GROUP BY age ORDER BY requests DESC, age LIMIT 3"""),
+     f"""SELECT age, COUNT(*) AS requests
+        FROM requests WHERE {CLIENT_ROWS} GROUP BY age ORDER BY requests DESC, age LIMIT 3"""),
     ("What income group issued the most requests?",
-     """SELECT income, COUNT(*) AS requests
-        FROM requests GROUP BY income ORDER BY requests DESC, income LIMIT 3"""),
+     f"""SELECT income, COUNT(*) AS requests
+        FROM requests WHERE {CLIENT_ROWS}
+        GROUP BY income ORDER BY requests DESC, income LIMIT 3"""),
 ]
 
 CHECKS = [
+    ("Client requests (all six headers present; used above)",
+     f"SELECT COUNT(*) FROM requests WHERE {CLIENT_ROWS}"),
+    ("Requests without client headers (internet scanners; excluded above)",
+     f"SELECT COUNT(*) FROM requests WHERE NOT ({CLIENT_ROWS})"),
     ("Total rows in requests", "SELECT COUNT(*) FROM requests"),
     ("Rows in failed_requests", "SELECT COUNT(*) FROM failed_requests"),
     ("Non-200 rows in requests (should equal the line above)",
