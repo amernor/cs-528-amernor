@@ -4,7 +4,7 @@
 #
 # Usage: tools/scheduler.sh pause    # while actively using the DB
 #        tools/scheduler.sh resume   # when done (cleanup.sh also does this)
-#        tools/scheduler.sh run      # trigger it now (works even when paused)
+#        tools/scheduler.sh run      # trigger it now (a paused job is resumed, run, re-paused)
 #        tools/scheduler.sh status   # job state + DB state
 set -euo pipefail
 
@@ -16,7 +16,14 @@ DB_INSTANCE=hw5-db
 gc() { gcloud --project "$PROJECT_ID" --quiet "$@"; }
 
 case "${1:-}" in
-  pause|resume|run) gc scheduler jobs "$1" "$JOB" --location "$REGION" ;;
+  pause|resume) gc scheduler jobs "$1" "$JOB" --location "$REGION" ;;
+  run)
+    # a paused job cannot be run, so resume it briefly and pause it again
+    was="$(gc scheduler jobs describe "$JOB" --location "$REGION" --format 'value(state)')"
+    [[ "$was" == PAUSED ]] && gc scheduler jobs resume "$JOB" --location "$REGION"
+    gc scheduler jobs run "$JOB" --location "$REGION"
+    [[ "$was" == PAUSED ]] && gc scheduler jobs pause "$JOB" --location "$REGION"
+    ;;
   status) ;;
   *)
     echo "usage: $0 pause|resume|run|status" >&2
