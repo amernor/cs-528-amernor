@@ -12,3 +12,9 @@ hw4/client-run.txt
 # raw stress test logs (kept local); notes for the written report
 hw4/stress-test/results/
 hw4/report/*.md
+
+# hw5: local venv, client binaries, load-test output, server timing dumps
+hw5/.venv/
+hw5/http-client*
+hw5/results/
+hw5/timings*.csv
