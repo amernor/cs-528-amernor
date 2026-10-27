@@ -49,6 +49,7 @@ SCHEDULER_JOB=hw5-db-check
 WEB_SA="hw5-web-server@${PROJECT_ID}.iam.gserviceaccount.com"
 REPORT_SA="hw5-forbidden-reporter@${PROJECT_ID}.iam.gserviceaccount.com"
 STOPPER_SA="hw5-db-stopper@${PROJECT_ID}.iam.gserviceaccount.com"
+LOAD_SA="hw5-load-client@${PROJECT_ID}.iam.gserviceaccount.com"
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
@@ -88,6 +89,8 @@ exists gc iam service-accounts describe "$REPORT_SA" ||
   gc iam service-accounts create hw5-forbidden-reporter --display-name "HW5 forbidden reporter (service2)"
 exists gc iam service-accounts describe "$STOPPER_SA" ||
   gc iam service-accounts create hw5-db-stopper --display-name "HW5 hourly Cloud SQL stopper"
+exists gc iam service-accounts describe "$LOAD_SA" ||
+  gc iam service-accounts create hw5-load-client --display-name "HW5 load-test client (may only call the DB stopper)"
 
 echo "==> Pub/Sub topic and subscription"
 exists gc pubsub topics describe "$TOPIC" || gc pubsub topics create "$TOPIC"
@@ -250,15 +253,28 @@ create_vm "$REPORT_VM" \
   --service-account "$REPORT_SA" --scopes cloud-platform
 
 # Ubuntu 24.04: the Linux http client needs glibc >= 2.38 (Debian 12 has 2.36).
+# Its service account can only invoke the DB stopper, so a finished load test
+# can stop the database (run-load-test.sh with STOP_DB_AFTER=1).
 # Never reset on re-run so a load test in progress is not killed.
-echo "==> VM: $CLIENT_VM (http client, no service account)"
+echo "==> VM: $CLIENT_VM (http client)"
 if exists gc compute instances describe "$CLIENT_VM" --zone "$ZONE"; then
-  echo "    $CLIENT_VM exists: leaving it running"
+  if [[ "$(gc compute instances describe "$CLIENT_VM" --zone "$ZONE" \
+         --format 'value(serviceAccounts[0].email)')" != "$LOAD_SA" ]]; then
+    # one-time migration of a client VM created without a service account;
+    # its ephemeral IP changes, so re-run tools/firewall.sh lock if it is locked
+    echo "    $CLIENT_VM: attaching $LOAD_SA (stop, set, start)"
+    gc compute instances stop "$CLIENT_VM" --zone "$ZONE"
+    gc compute instances set-service-account "$CLIENT_VM" --zone "$ZONE" \
+      --service-account "$LOAD_SA" --scopes cloud-platform
+    gc compute instances start "$CLIENT_VM" --zone "$ZONE"
+  else
+    echo "    $CLIENT_VM exists: leaving it running"
+  fi
 else
   gc compute instances create "$CLIENT_VM" --zone "$ZONE" \
     --machine-type "$CLIENT_MACHINE" \
     --image-family ubuntu-2404-lts-amd64 --image-project ubuntu-os-cloud \
-    --no-service-account --no-scopes \
+    --service-account "$LOAD_SA" --scopes cloud-platform \
     --metadata-from-file "startup-script=$HERE/startup-client.sh"
 fi
 
@@ -279,6 +295,10 @@ gc functions deploy "$FUNCTION" --gen2 --region "$REGION" --runtime python312 \
 retry gc functions add-invoker-policy-binding "$FUNCTION" --region "$REGION" \
   --member "serviceAccount:$STOPPER_SA"
 FUNCTION_URL="$(gc functions describe "$FUNCTION" --gen2 --region "$REGION" --format 'value(serviceConfig.uri)')"
+# the load-test client may call it too (only that), and finds it via metadata
+retry gc functions add-invoker-policy-binding "$FUNCTION" --region "$REGION" \
+  --member "serviceAccount:$LOAD_SA"
+gc compute instances add-metadata "$CLIENT_VM" --zone "$ZONE" --metadata "STOP_DB_URL=$FUNCTION_URL"
 scheduler_flags=(--location "$REGION" --schedule "0 * * * *" --time-zone UTC
   --uri "$FUNCTION_URL" --http-method POST
   --oidc-service-account-email "$STOPPER_SA" --oidc-token-audience "$FUNCTION_URL")

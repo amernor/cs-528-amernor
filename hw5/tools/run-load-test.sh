@@ -9,10 +9,25 @@
 #   tmux new -s load
 #   ./run-load-test.sh <server-ip> [seed=528] [requests-per-client=50000]
 #
-# Env: CLIENT   path to the http client (default ./http-client-linux)
-#      PORT     server port (default 8080)
-#      TIMEOUT  per-request timeout in seconds passed to -t (default 30)
+# Env: CLIENT        path to the http client (default ./http-client-linux)
+#      PORT          server port (default 8080)
+#      TIMEOUT       per-request timeout in seconds passed to -t (default 30)
+#      STOP_DB_AFTER=1  when the test ends (finished, failed or Ctrl-C), call
+#                    the hw5-db-stopper function so the database does not keep
+#                    running unattended (e.g. overnight). Uses the VM's service
+#                    account, which may only invoke that function.
 set -euo pipefail
+
+stop_db() {
+  local md="http://metadata.google.internal/computeMetadata/v1" url token
+  echo
+  echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] STOP_DB_AFTER=1: asking hw5-db-stopper to stop the database"
+  url="$(curl -sf -H 'Metadata-Flavor: Google' "$md/instance/attributes/STOP_DB_URL")" &&
+  token="$(curl -sf -H 'Metadata-Flavor: Google' "$md/instance/service-accounts/default/identity?audience=$url")" &&
+  curl -sf -X POST -H "Authorization: Bearer $token" "$url" ||
+    echo "WARNING: could not reach the DB stopper; stop the database by hand (tools/scheduler.sh run)"
+}
+[[ "${STOP_DB_AFTER:-0}" == 1 ]] && trap stop_db EXIT
 
 if [[ $# -lt 1 ]]; then
   echo "usage: $0 <server-ip> [seed=528] [requests-per-client=50000]" >&2
