@@ -20,3 +20,9 @@ hw5/linux-http-client*
 hw5/results/
 hw5/timings*.csv
 hw5/headers.log
+# hw5: kept local only
+hw5/ASSIGNMENT.md
+hw5/HW5_PLAN.md
+hw5/report/REPORT.md
+hw5/report/RUNBOOK.md
+hw5/report/screenshots/
