@@ -1,0 +1,7 @@
+clients         start (UTC)  secs req/s errors  CPU %  Mem % Sent MiB/s Recv MiB/s
+      1 2026-10-13 22:48:31   200    12      0  65.18  46.66       1.21        1.2
+      2 2026-10-13 22:53:51   250    20      0   94.2  46.35       1.99       1.96
+      3 2026-10-13 23:00:02   290    25      0 143.69  45.94       3.05       3.04
+      4 2026-10-13 23:06:52   491    20      0 103.07  46.14       3.37       3.34
+
+Wrote /Users/amernor/Desktop/cs-528-amernor/hw4/report/metrics.csv (latest run per client count)

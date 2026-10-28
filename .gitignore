@@ -1,0 +1,28 @@
+.DS_Store
+.venv/
+__pycache__/
+
+# provided client binaries and their output
+hw3/http-client
+hw3/client-run.txt
+hw4/http-client
+hw4/http-client-linux
+hw4/client-run.txt
+
+# raw stress test logs (kept local); notes for the written report
+hw4/stress-test/results/
+hw4/report/*.md
+
+# hw5: local venv, client binaries, load-test output, server timing dumps
+hw5/.venv/
+hw5/http-client*
+hw5/linux-http-client*
+hw5/results/
+hw5/timings*.csv
+hw5/headers.log
+# hw5: kept local only
+hw5/ASSIGNMENT.md
+hw5/HW5_PLAN.md
+hw5/report/REPORT.md
+hw5/report/RUNBOOK.md
+hw5/report/screenshots/

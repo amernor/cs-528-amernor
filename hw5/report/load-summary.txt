@@ -1,0 +1,15 @@
+
+===== Summary: 2 clients x 50000 requests, seed 528 =====
+Command: ./http-client-linux -d 136.116.93.99 -p 8080 -n 50000 -r 528 -b none -w pages -i 11999 -t 30 -v
+Start:   2026-10-27 07:05:04 UTC
+End:     2026-10-27 08:17:27 UTC
+Elapsed: 4343s
+client 1:
+     47693 200 OK
+      2307 400 Bad Request
+client 2:
+     47720 200 OK
+      2280 400 Bad Request
+Total requests finished: 100000
+Unexpected responses (not 200/400/404): 0
+Throughput: 23 req/s
