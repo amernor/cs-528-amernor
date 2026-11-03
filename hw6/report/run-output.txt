@@ -1,0 +1,159 @@
+==> Checking prerequisites
+==> Enabling APIs
+Operation "operations/acat.p2-189833789666-c30262d3-5ad6-4e72-b1a9-badbad0a9774" finished successfully.
+==> Service account hw6-trainer@superb-heaven-507521-u2.iam.gserviceaccount.com (least privilege)
+Created service account [hw6-trainer].
+Service account email: hw6-trainer@superb-heaven-507521-u2.iam.gserviceaccount.com
+==> Starting Cloud SQL hw5-db (01:34:26 UTC)
+    hw5-db is RUNNABLE (superb-heaven-507521-u2:us-central1:hw5-db)
+==> Clearing old output in gs://cs528-amernor/hw6/
+==> Creating VM hw6-trainer (e2-medium) (01:34:34 UTC)
+Created [https://www.googleapis.com/compute/v1/projects/superb-heaven-507521-u2/zones/us-central1-a/instances/hw6-trainer].
+WARNING: Some requests generated warnings:
+ - You are creating a global DNS VM. VM instances using global DNS are vulnerable to cross-regional outages. To reduce the risk of widespread service disruption, use zonal DNS instead. Learn more at https://cloud.google.com/compute/docs/networking/zonal-dns?utm_id=vm-insert
+
+NAME         ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP    STATUS
+hw6-trainer  us-central1-a  e2-medium                  10.128.0.12  34.72.190.180  RUNNING
+==> Waiting for the VM to install packages, migrate and train (up to 30 min)
+    still running... 0m2s
+    still running... 0m24s
+    still running... 0m47s
+    still running... 1m9s
+    still running... 1m32s
+    still running... 1m54s
+    still running... 2m17s
+    VM finished: _SUCCESS (01:37:28 UTC)
+
+==> Deleting VM hw6-trainer
+Deleted [https://www.googleapis.com/compute/v1/projects/superb-heaven-507521-u2/zones/us-central1-a/instances/hw6-trainer].
+==> Stopping Cloud SQL hw5-db
+The following message will be used for the patch API method.
+{"name": "hw5-db", "project": "superb-heaven-507521-u2", "settings": {"activationPolicy": "NEVER"}}
+Patching Cloud SQL instance...
+......done.
+Updated [https://sqladmin.googleapis.com/sql/v1beta4/projects/superb-heaven-507521-u2/instances/hw5-db].
+    hw5-db: STOPPED (activation policy NEVER)
+==> Resuming scheduler job hw5-db-check
+Job has been resumed.
+
+==> Output files in gs://cs528-amernor/hw6/
+        33  2026-11-03T01:37:27Z  gs://cs528-amernor/hw6/_SUCCESS
+    892106  2026-11-03T01:37:19Z  gs://cs528-amernor/hw6/country_model_test_predictions.csv
+   1033988  2026-11-03T01:37:20Z  gs://cs528-amernor/hw6/income_model_test_predictions.csv
+      2886  2026-11-03T01:37:20Z  gs://cs528-amernor/hw6/model_summary.txt
+      8787  2026-11-03T01:37:25Z  gs://cs528-amernor/hw6/train_log.txt
+TOTAL: 5 objects, 1937800 bytes (1.85MiB)
+
+======== model_summary.txt ========
+HW6 models  (run started 2026-11-03 01:36:18 UTC, host hw6-trainer)
+Loaded 100000 requests from superb-heaven-507521-u2:us-central1:hw5-db/hw5 (requests_3nf JOIN client_ips JOIN countries)
+
+======================================================================
+MODEL 1: client IP -> country
+======================================================================
+Model:    DecisionTreeClassifier on the IP as a 32-bit integer
+Split:    by IP (GroupShuffleSplit, test_size=0.2, seed=528); test IPs also in training: 0
+Rows:     train 79955, test 20045 (15339 distinct test IPs, 197 countries)
+Tree:     depth 28, 965 leaves (= IP blocks learned), fit in 0.48s
+Train accuracy: 100.0000%
+TEST ACCURACY:  100.0000%   (20045/20045 correct; target >= 99%)
+
+======================================================================
+MODEL 2: (age, gender, hour of day, country) -> income
+======================================================================
+Model:    HistGradientBoostingClassifier (age/gender/country categorical)
+Split:    random, stratified by income (test_size=0.2, seed=528)
+Rows:     train 80000, test 20000, 8 income classes
+Train accuracy: 50.2613%
+TEST ACCURACY:  33.4750%   (6695/20000 correct; target 35%)
+
+Comparison on the same test set:
+  majority class ('60k-100k') : 12.6350%
+  most common income per age     : 33.7900%
+  ceiling if only age matters    : 33.8910%
+
+Seed sweep (seeds 0-9, new split + model each time):
+  33.61%  33.36%  34.27%  33.76%  33.35%  33.14%  33.63%  33.66%  33.27%  33.50%
+  mean 33.55%, min 33.14%, max 34.27%; seeds reaching 35%: 0/10
+
+Income share within each age group (rows sum to 100%):
+  income 0-10k 10k-20k 20k-40k 40k-60k 60k-100k 100k-150k 150k-250k 250k+
+  age                                                                    
+  0-16     33%     34%       -       -        -         -         -   33%
+  17-25    34%     33%     33%       -        -         -         -     -
+  26-35      -     34%     33%     33%        -         -         -     -
+  36-45      -       -     33%     33%      34%         -         -     -
+  46-55      -       -       -     33%      33%       34%         -     -
+  56-65      -       -       -       -      33%       33%       33%     -
+  66-75      -       -       -       -        -       33%       34%   33%
+  76+      33%       -       -       -        -         -       33%   34%
+
+Why 35% is out of reach: each age group spreads evenly over exactly 3
+income groups, and gender, hour and country carry no further signal
+(all-field model ~= age-only lookup). The best any model can expect on
+unseen rows is ~1/3 (33.89%); scores above that on one split are
+noise, which is the seed sensitivity the assignment warns about.
+
+Finished in 61.3s. Output files:
+  wrote gs://cs528-amernor/hw6/country_model_test_predictions.csv
+  wrote gs://cs528-amernor/hw6/income_model_test_predictions.csv
+
+======== country_model_test_predictions.csv ========
+request_id,client_ip,actual_country,predicted_country,correct
+8,1.95.11.181,Solomon Islands,Solomon Islands,True
+15,153.104.49.146,Iceland,Iceland,True
+21,11.20.90.144,Tuvalu,Tuvalu,True
+22,141.2.161.114,Switzerland,Switzerland,True
+25,34.6.126.178,Eritrea,Eritrea,True
+37,109.91.8.60,Switzerland,Switzerland,True
+40,211.192.172.203,Bhutan,Bhutan,True
+47,154.129.5.72,Peru,Peru,True
+52,44.21.179.157,Laos,Laos,True
+53,176.244.199.139,Kenya,Kenya,True
+54,23.246.165.145,Cuba,Cuba,True
+64,158.32.119.26,Israel,Israel,True
+65,167.106.252.218,Georgia,Georgia,True
+77,44.21.179.169,Laos,Laos,True
+81,155.143.185.253,China,China,True
+90,32.44.114.62,Czechia,Czechia,True
+96,50.0.45.141,Namibia,Namibia,True
+98,223.3.222.146,Timor-Leste,Timor-Leste,True
+110,4.195.124.3,Japan,Japan,True
+113,78.26.234.172,Belize,Belize,True
+116,128.239.165.205,Maldives,Maldives,True
+134,225.156.35.109,Sierra Leone,Sierra Leone,True
+138,239.238.200.14,Finland,Finland,True
+140,76.118.252.88,Australia,Australia,True
+144,145.37.13.192,Bangladesh,Bangladesh,True
+... (20045 rows in total; PRINT_ROWS=0 prints every row)
+
+======== income_model_test_predictions.csv ========
+request_id,age,gender,hour,country,actual_income,predicted_income,correct
+41789,0-16,Female,13,Japan,0-10k,10k-20k,False
+36453,66-75,Male,21,Kuwait,150k-250k,100k-150k,False
+45869,0-16,Male,23,Oman,0-10k,0-10k,True
+94342,17-25,Female,23,Namibia,20k-40k,20k-40k,True
+77660,46-55,Female,11,Saint Lucia,40k-60k,60k-100k,False
+1360,17-25,Female,3,Belgium,20k-40k,10k-20k,False
+12695,46-55,Female,9,Bhutan,60k-100k,60k-100k,True
+82640,56-65,Female,19,Tanzania,150k-250k,60k-100k,False
+13084,36-45,Male,1,Benin,20k-40k,40k-60k,False
+36780,66-75,Male,1,Ethiopia,100k-150k,250k+,False
+87048,0-16,Female,0,Slovenia,0-10k,250k+,False
+13964,56-65,Male,19,Tajikistan,100k-150k,60k-100k,False
+19375,26-35,Female,9,Peru,40k-60k,10k-20k,False
+31955,46-55,Female,1,Albania,60k-100k,60k-100k,True
+73193,36-45,Male,9,Belize,60k-100k,20k-40k,False
+98684,46-55,Male,9,Sweden,60k-100k,60k-100k,True
+12805,46-55,Male,4,Malawi,40k-60k,100k-150k,False
+82680,0-16,Female,18,Mongolia,0-10k,0-10k,True
+45183,26-35,Female,9,Turkey,10k-20k,10k-20k,True
+35459,36-45,Female,21,Bosnia and Herzegovina,60k-100k,40k-60k,False
+34786,66-75,Female,1,Kuwait,100k-150k,100k-150k,True
+52358,56-65,Female,9,Dominica,60k-100k,150k-250k,False
+38883,46-55,Female,4,China,60k-100k,60k-100k,True
+49189,0-16,Female,23,Romania,0-10k,10k-20k,False
+84125,0-16,Male,11,Netherlands,10k-20k,10k-20k,True
+... (20000 rows in total; PRINT_ROWS=0 prints every row)
+
+Done. Model output: gs://cs528-amernor/hw6/
