@@ -30,10 +30,13 @@ FROM requests;
 -- 4. failed_requests_3nf: link each HW5 failed_requests row to its request.
 --    service1 wrote both rows in one transaction with the same timestamp,
 --    file and status code, so those three columns identify the request.
+--    IGNORE INDEX: otherwise MySQL looks up idx_status once per failed row
+--    (~4.6k x 4.6k random row reads, minutes on db-f1-micro when the table
+--    is not cached); without it, it hash-joins with one scan of each table.
 INSERT IGNORE INTO failed_requests_3nf (request_id)
 SELECT r.id
 FROM failed_requests f
-JOIN requests r
+JOIN requests r IGNORE INDEX (idx_status)
   ON  r.received_at    = f.time_of_request
   AND r.requested_file <=> f.requested_file
   AND r.status_code    = f.error_code;

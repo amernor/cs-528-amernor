@@ -1,51 +1,79 @@
 ==> Checking prerequisites
 ==> Enabling APIs
-Operation "operations/acat.p2-189833789666-c30262d3-5ad6-4e72-b1a9-badbad0a9774" finished successfully.
+Operation "operations/acat.p2-189833789666-a1b0659c-1cdc-45cd-98a2-7c5645b6d9cb" finished successfully.
+==> Bucket gs://cs528-amernor
+    exists
+==> DB password secret hw5-db-password
+    exists
+==> Cloud SQL instance hw5-db (04:34:21 UTC)
+    exists; starting it
+    RUNNABLE (superb-heaven-507521-u2:us-central1:hw5-db)
+==> Database hw5 and user webapp
+    database hw5 exists
+    user webapp exists; syncing its password with the secret
+Updating Cloud SQL user...
+.done.
+    (tables are checked/created on the VM: ensure_data.py, migrate_3nf.py)
 ==> Service account hw6-trainer@superb-heaven-507521-u2.iam.gserviceaccount.com (least privilege)
 Created service account [hw6-trainer].
 Service account email: hw6-trainer@superb-heaven-507521-u2.iam.gserviceaccount.com
-==> Starting Cloud SQL hw5-db (01:34:26 UTC)
-    hw5-db is RUNNABLE (superb-heaven-507521-u2:us-central1:hw5-db)
+    granted roles/cloudsql.client, secretAccessor on hw5-db-password, objectAdmin on gs://cs528-amernor
 ==> Clearing old output in gs://cs528-amernor/hw6/
-==> Creating VM hw6-trainer (e2-medium) (01:34:34 UTC)
+==> Creating VM hw6-trainer (e2-medium) (04:34:44 UTC)
 Created [https://www.googleapis.com/compute/v1/projects/superb-heaven-507521-u2/zones/us-central1-a/instances/hw6-trainer].
 WARNING: Some requests generated warnings:
  - You are creating a global DNS VM. VM instances using global DNS are vulnerable to cross-regional outages. To reduce the risk of widespread service disruption, use zonal DNS instead. Learn more at https://cloud.google.com/compute/docs/networking/zonal-dns?utm_id=vm-insert
 
-NAME         ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP    STATUS
-hw6-trainer  us-central1-a  e2-medium                  10.128.0.12  34.72.190.180  RUNNING
-==> Waiting for the VM to install packages, migrate and train (up to 30 min)
+NAME         ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP   STATUS
+hw6-trainer  us-central1-a  e2-medium                  10.128.0.15  34.72.132.28  RUNNING
+==> Waiting for the VM: install packages, check data, migrate, train (up to 40 min)
     still running... 0m2s
     still running... 0m24s
-    still running... 0m47s
-    still running... 1m9s
-    still running... 1m32s
-    still running... 1m54s
-    still running... 2m17s
-    VM finished: _SUCCESS (01:37:28 UTC)
+    still running... 0m46s
+    still running... 1m8s
+    still running... 1m31s
+    still running... 1m53s
+    still running... 2m16s
+    still running... 2m38s
+    still running... 3m0s
+    still running... 3m23s
+    still running... 3m45s
+    still running... 4m8s
+    still running... 4m31s
+    still running... 4m53s
+    still running... 5m16s
+    still running... 5m38s
+    VM finished: _SUCCESS (04:41:15 UTC)
 
 ==> Deleting VM hw6-trainer
 Deleted [https://www.googleapis.com/compute/v1/projects/superb-heaven-507521-u2/zones/us-central1-a/instances/hw6-trainer].
+==> Removing IAM grants and service account hw6-trainer@superb-heaven-507521-u2.iam.gserviceaccount.com
+    removed roles/cloudsql.client on project superb-heaven-507521-u2
+    removed roles/secretmanager.secretAccessor on secret hw5-db-password
+    removed roles/storage.objectAdmin on gs://cs528-amernor
+deleted service account [hw6-trainer@superb-heaven-507521-u2.iam.gserviceaccount.com]
+    deleted hw6-trainer@superb-heaven-507521-u2.iam.gserviceaccount.com
 ==> Stopping Cloud SQL hw5-db
 The following message will be used for the patch API method.
 {"name": "hw5-db", "project": "superb-heaven-507521-u2", "settings": {"activationPolicy": "NEVER"}}
 Patching Cloud SQL instance...
-......done.
+........done.
 Updated [https://sqladmin.googleapis.com/sql/v1beta4/projects/superb-heaven-507521-u2/instances/hw5-db].
-    hw5-db: STOPPED (activation policy NEVER)
+==> Cloud SQL hw5-db: STOPPED (activation policy NEVER)
 ==> Resuming scheduler job hw5-db-check
 Job has been resumed.
+==> Left behind by HW6: 0 VM(s), 0 service account(s)
 
 ==> Output files in gs://cs528-amernor/hw6/
-        33  2026-11-03T01:37:27Z  gs://cs528-amernor/hw6/_SUCCESS
-    892106  2026-11-03T01:37:19Z  gs://cs528-amernor/hw6/country_model_test_predictions.csv
-   1033988  2026-11-03T01:37:20Z  gs://cs528-amernor/hw6/income_model_test_predictions.csv
-      2886  2026-11-03T01:37:20Z  gs://cs528-amernor/hw6/model_summary.txt
-      8787  2026-11-03T01:37:25Z  gs://cs528-amernor/hw6/train_log.txt
-TOTAL: 5 objects, 1937800 bytes (1.85MiB)
+        33  2026-11-03T04:40:55Z  gs://cs528-amernor/hw6/_SUCCESS
+    892106  2026-11-03T04:40:47Z  gs://cs528-amernor/hw6/country_model_test_predictions.csv
+   1033988  2026-11-03T04:40:47Z  gs://cs528-amernor/hw6/income_model_test_predictions.csv
+      2886  2026-11-03T04:40:47Z  gs://cs528-amernor/hw6/model_summary.txt
+      9019  2026-11-03T04:40:53Z  gs://cs528-amernor/hw6/train_log.txt
+TOTAL: 5 objects, 1938032 bytes (1.85MiB)
 
 ======== model_summary.txt ========
-HW6 models  (run started 2026-11-03 01:36:18 UTC, host hw6-trainer)
+HW6 models  (run started 2026-11-03 04:39:31 UTC, host hw6-trainer)
 Loaded 100000 requests from superb-heaven-507521-u2:us-central1:hw5-db/hw5 (requests_3nf JOIN client_ips JOIN countries)
 
 ======================================================================
@@ -54,7 +82,7 @@ MODEL 1: client IP -> country
 Model:    DecisionTreeClassifier on the IP as a 32-bit integer
 Split:    by IP (GroupShuffleSplit, test_size=0.2, seed=528); test IPs also in training: 0
 Rows:     train 79955, test 20045 (15339 distinct test IPs, 197 countries)
-Tree:     depth 28, 965 leaves (= IP blocks learned), fit in 0.48s
+Tree:     depth 28, 965 leaves (= IP blocks learned), fit in 0.67s
 Train accuracy: 100.0000%
 TEST ACCURACY:  100.0000%   (20045/20045 correct; target >= 99%)
 
@@ -94,7 +122,7 @@ income groups, and gender, hour and country carry no further signal
 unseen rows is ~1/3 (33.89%); scores above that on one split are
 noise, which is the seed sensitivity the assignment warns about.
 
-Finished in 61.3s. Output files:
+Finished in 74.7s. Output files:
   wrote gs://cs528-amernor/hw6/country_model_test_predictions.csv
   wrote gs://cs528-amernor/hw6/income_model_test_predictions.csv
 

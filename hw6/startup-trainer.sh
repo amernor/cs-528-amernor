@@ -3,7 +3,9 @@
 # first boot:
 #   1. fetches the code and settings run.sh put in the instance metadata
 #   2. installs Python packages in a venv
-#   3. runs migrate_3nf.py (no-op if already migrated) and train_models.py
+#   3. runs ensure_data.py (HW5 tables + data present, restored from the
+#      bucket snapshot if empty), migrate_3nf.py (no-op if already migrated)
+#      and train_models.py
 #   4. uploads its log and a _SUCCESS or _FAILED marker to
 #      gs://$BUCKET/$OUT_PREFIX/, which run.sh waits for
 #   5. powers the VM off (run.sh deletes it)
@@ -35,15 +37,16 @@ main() {
   mkdir -p "$APP/sql"
   md train-code    > "$APP/train_models.py"
   md migrate-code  > "$APP/migrate_3nf.py"
+  md ensure-code   > "$APP/ensure_data.py"
   md db-code       > "$APP/db.py"
   md requirements  > "$APP/requirements.txt"
-  for f in schema_3nf precheck_3nf migrate_3nf verify_3nf; do
+  for f in hw5_schema schema_3nf precheck_3nf migrate_3nf verify_3nf; do
     md "sql-${f//_/-}" > "$APP/sql/$f.sql"
   done
 
   export PROJECT_ID="$(md PROJECT_ID)" INSTANCE_CONNECTION_NAME="$(md INSTANCE_CONNECTION_NAME)"
   export DB_NAME="$(md DB_NAME)" DB_USER="$(md DB_USER)" DB_PASSWORD_SECRET="$(md DB_PASSWORD_SECRET)"
-  export BUCKET OUT_PREFIX SEED="$(md SEED)" PYTHONUNBUFFERED=1
+  export BUCKET OUT_PREFIX SEED="$(md SEED)" DATA_PREFIX="$(md DATA_PREFIX)" PYTHONUNBUFFERED=1
 
   echo "==> Installing Python packages"
   apt-get update -q
@@ -53,6 +56,8 @@ main() {
   "$APP/venv/bin/pip" install -q -r "$APP/requirements.txt"
 
   cd "$APP"
+  echo; echo "==> ensure_data.py"
+  "$APP/venv/bin/python" ensure_data.py
   echo; echo "==> migrate_3nf.py"
   "$APP/venv/bin/python" migrate_3nf.py
   echo; echo "==> train_models.py"

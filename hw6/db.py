@@ -26,10 +26,21 @@ DB_USER = os.environ.get("DB_USER", "webapp")
 DB_PASSWORD_SECRET = os.environ.get("DB_PASSWORD_SECRET", "hw5-db-password")
 
 
-def get_password():
+def get_password(attempts=10, wait=15):
+    """The DB password from Secret Manager. Retried: run.sh creates the VM's
+    service account just before the VM, and new IAM grants take a minute or
+    two to apply."""
     client = secretmanager.SecretManagerServiceClient()
     name = f"projects/{PROJECT_ID}/secrets/{DB_PASSWORD_SECRET}/versions/latest"
-    return client.access_secret_version(name=name).payload.data.decode().strip()
+    for i in range(1, attempts + 1):
+        try:
+            return client.access_secret_version(name=name).payload.data.decode().strip()
+        except Exception as e:  # PermissionDenied while the grant propagates
+            if i == attempts:
+                raise
+            print(f"  cannot read secret yet (attempt {i}/{attempts}): {e}; "
+                  f"retrying in {wait}s", flush=True)
+            time.sleep(wait)
 
 
 def make_engine(attempts=10, wait=15):
