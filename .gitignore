@@ -30,6 +30,5 @@ hw5/report/screenshots/
 # hw6: local venv; assignment text, report and runbook kept local
 hw6/.venv/
 hw6/CS528-HW_6.md
-hw6/report/REPORT.md
-hw6/report/RUNBOOK.md
-hw6/report/screenshots/
+hw6/report/*
+!hw6/report/run-output.txt
